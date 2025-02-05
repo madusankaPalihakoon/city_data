@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class NtripInterface extends StatefulWidget {
+  const NtripInterface({super.key});
+
   @override
   _NtripInterfaceState createState() => _NtripInterfaceState();
 }
