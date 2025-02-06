@@ -21,7 +21,7 @@ class _NtripInterfaceState extends State<NtripInterface> {
   String? selectedMountPoint;
   bool isLoading = false;
 
-  Future<String> fetchNTRIPData() async {
+  Future<String> fetchNTRIPData({String? mountPoint}) async {
     final String username = _userController.text;
     final String password = _passController.text;
     final String authHeader =
@@ -30,10 +30,22 @@ class _NtripInterfaceState extends State<NtripInterface> {
     print('Connected to ${_hostController.text}:${_portController.text}');
     final Socket socket = await Socket.connect(
         _hostController.text, int.parse(_portController.text));
-    final String request = 'GET / HTTP/0.9\r\n'
-        'User-Agent: NTRIPClient/0.9\r\n'
-        'Authorization: $authHeader\r\n'
-        '\r\n';
+
+    String request;
+    if (mountPoint != null) {
+      request = 'GET /$mountPoint HTTP/1.1\r\n'
+          'User-Agent: NTRIP FlutterClient/1.0\r\n'
+          'Authorization: $authHeader\r\n'
+          'Connection: close\r\n'
+          'Accept: */*\r\n'
+          '\r\n';
+    } else {
+      request = 'GET / HTTP/1.1\r\n'
+          'User-Agent: NTRIPClient/0.9\r\n'
+          'Authorization: $authHeader\r\n'
+          'Connection: close\r\n'
+          '\r\n';
+    }
 
     socket.write(request);
     socket.flush();
@@ -44,6 +56,8 @@ class _NtripInterfaceState extends State<NtripInterface> {
           (BytesBuilder builder, List<int> data) => builder..add(data),
         )
         .then((builder) => builder.takeBytes());
+
+    print('Raw Response Bytes: $response');
 
     socket.destroy();
     return utf8.decode(response);
@@ -73,6 +87,55 @@ class _NtripInterfaceState extends State<NtripInterface> {
       parseSourceTable(data);
     } catch (e) {
       print('Error: $e');
+    }
+
+    setState(() => isLoading = false);
+  }
+
+  Future<void> connectToMountPoint() async {
+    if (selectedMountPoint == null) {
+      print('No mountpoint selected');
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    try {
+      final String username = _userController.text;
+      final String password = _passController.text;
+      final String authHeader =
+          'Basic ${base64Encode(utf8.encode('$username:$password'))}';
+
+      print('Connecting to ${_hostController.text}:${_portController.text}');
+      final Socket socket = await Socket.connect(
+          _hostController.text, int.parse(_portController.text));
+
+      String request = 'GET /$selectedMountPoint HTTP/1.1\r\n'
+          'User-Agent: NTRIP FlutterClient/1.0\r\n'
+          'Authorization: $authHeader\r\n'
+          'Connection: close\r\n'
+          'Accept: */*\r\n'
+          '\r\n';
+
+      socket.write(request);
+      socket.flush();
+
+      print('Connected to mountpoint: $selectedMountPoint');
+
+      socket.listen(
+        (List<int> data) {
+          print('Received Data: ${utf8.decode(data)}');
+        },
+        onError: (error) {
+          print('Error: $error');
+        },
+        onDone: () {
+          print('Connection closed');
+          socket.destroy();
+        },
+      );
+    } catch (e) {
+      print('Error connecting to mountpoint: $e');
     }
 
     setState(() => isLoading = false);
@@ -124,9 +187,7 @@ class _NtripInterfaceState extends State<NtripInterface> {
               SizedBox(height: 20),
               if (selectedMountPoint != null)
                 ElevatedButton(
-                  onPressed: () {
-                    print("Connecting to mountpoint: $selectedMountPoint");
-                  },
+                  onPressed: connectToMountPoint,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.greenAccent[700],
                     padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
@@ -134,7 +195,9 @@ class _NtripInterfaceState extends State<NtripInterface> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: Text("Connect", style: TextStyle(fontSize: 18)),
+                  child: isLoading
+                      ? CircularProgressIndicator(color: Colors.white)
+                      : Text("Connect", style: TextStyle(fontSize: 18)),
                 ),
             ],
           ),
