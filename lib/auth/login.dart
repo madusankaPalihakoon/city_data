@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../interface/home.dart'; // Import the HomeScreen
+import '../services/bluetooth.dart';
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
@@ -41,7 +44,9 @@ class _LoginScreenState extends State<LoginScreen> {
       // Navigate to HomeScreen
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => HomeScreen()),
+        MaterialPageRoute(
+            builder: (context) => DeviceScreen()), // Add this line
+        // MaterialPageRoute(builder: (context) => HomeScreen()),
       );
     } else {
       print("Error: ${response.body}");

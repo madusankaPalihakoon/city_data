@@ -15,16 +15,24 @@ allprojects {
     }
 }
 
-
 rootProject.buildDir = "../build"
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
-}
-subprojects {
+    
+    // Moved afterEvaluate inside the single subprojects block
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            project.android {
+                if (namespace == null) {
+                    namespace = "com.example.city_data" // Set your actual package name
+                }
+            }
+        }
+    }
+    
     project.evaluationDependsOn(":app")
 }
 
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }
-
