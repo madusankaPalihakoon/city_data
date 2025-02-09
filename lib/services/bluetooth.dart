@@ -123,10 +123,11 @@ class _DeviceScreenState extends State<DeviceScreen> {
                     if (!this.context.mounted) return;
                     if (connection != null && connection.isConnected) {
                       if (mounted) setState(() => _connectingToIndex = null);
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => DeviceScreen()));
+                      print("Connected to ${result.name}");
+                      // Navigator.push(
+                      //     context,
+                      //     MaterialPageRoute(
+                      //         builder: (context) => ConnectedDevice()));
                     }
                   } catch (e) {
                     if (mounted) setState(() => _connectingToIndex = null);
